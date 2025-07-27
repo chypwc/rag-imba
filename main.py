@@ -326,8 +326,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             for i, (product_id, score) in enumerate(unique_recs, 1):
                 # Get product details
                 product_details = get_product_details(str(product_id))
-                result += f"{i}. {product_details}\n"
-                result += f"   Recommendation Score: {score:.3f}\n\n"
+                result += f"{i}. {product_details}; **Score:** {score:.3f}\n\n"
             
             return result
         except ValueError:
@@ -368,9 +367,8 @@ def create_enhanced_tools(vectorstore, user_id=None):
             
             for i, doc in enumerate(docs, 1):
                 metadata = doc.metadata
-                result += f"{i}. {metadata.get('product_name', 'Unknown Product')}\n"
-                result += f"   Department: {metadata.get('department', 'Unknown')}\n"
-                result += f"   Aisle: {metadata.get('aisle', 'Unknown')}\n\n"
+                # Format exactly as requested
+                result += f"{i}. **Product:** {metadata.get('product_name', 'Unknown Product')}; **Aisle:** {metadata.get('aisle', 'Unknown')}; **Department:** {metadata.get('department', 'Unknown')}\n\n"
             
             return result
         except Exception as e:
@@ -387,8 +385,8 @@ def create_enhanced_tools(vectorstore, user_id=None):
             
             if docs:
                 metadata = docs[0].metadata
-                result = f"{metadata.get('product_name', 'Unknown Product')}"
-                result += f" (Department: {metadata.get('department', 'Unknown')}, Aisle: {metadata.get('aisle', 'Unknown')})"
+                # Format exactly as requested
+                result = f"**Product:** {metadata.get('product_name', 'Unknown Product')}; **Aisle:** {metadata.get('aisle', 'Unknown')}; **Department:** {metadata.get('department', 'Unknown')}"
                 return result
             else:
                 return f"Product ID {product_id_int} not found in database."
@@ -401,19 +399,32 @@ def create_enhanced_tools(vectorstore, user_id=None):
     # Create tools
     recommendation_tool = Tool(
         name="get_product_recommendations",
-        description=f"Get personalized product recommendations for user {user_id if user_id else '[USER_ID]'}. Returns product names, departments, and aisles with recommendation scores. Use this when users ask for recommendations, suggestions, or what they should buy. Pass the user ID '{user_id}' as the first parameter and the number of recommendations as the second parameter (e.g., '10' for 10 products).",
+        description=f"""Get personalized product recommendations for user {user_id if user_id else '[USER_ID]'}. 
+        
+        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]; **Score:** [score]
+        
+        Use this when users ask for recommendations, suggestions, or what they should buy. 
+        Pass the user ID '{user_id}' as the first parameter and the number of recommendations as the second parameter (e.g., '10' for 10 products).""",
         func=get_recommendations_with_count
     )
     
     search_tool = Tool(
         name="search_product_database",
-        description="Search the product database for information about products, categories, departments, or general product queries. Use this when users ask about specific products, categories, or general product information.",
+        description="""Search the product database for information about products, categories, departments, or general product queries. 
+        
+        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]
+        
+        Use this when users ask about specific products, categories, or general product information.""",
         func=enhanced_search_tool
     )
     
     product_details_tool = Tool(
         name="get_product_details",
-        description="Get detailed information about a specific product by its ID. Use this to get product names, departments, and aisles for specific product IDs.",
+        description="""Get detailed information about a specific product by its ID. 
+        
+        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]
+        
+        Use this to get product names, departments, and aisles for specific product IDs.""",
         func=get_product_details
     )
     
@@ -511,10 +522,9 @@ async def retrain_models():
 
 def create_hybrid_agent(session_id: str = None, user_id: str = None):
     """Create a hybrid agent with conversation memory"""
-    # Use global tools instead of creating new ones
     global vectorstore, conversation_sessions
     
-    # Initialize LLM
+    # Initialize LLM with system message
     llm = ChatOpenAI(model="gpt-4o", temperature=0)
     
     # Get or create conversation memory for this session
@@ -531,7 +541,7 @@ def create_hybrid_agent(session_id: str = None, user_id: str = None):
     # Create tools dynamically with user_id context
     tools = create_enhanced_tools(vectorstore, user_id)
     
-    # Create the agent with the tools and memory
+    # Create the agent with format instructions
     agent = initialize_agent(
         tools,
         llm,
@@ -540,7 +550,24 @@ def create_hybrid_agent(session_id: str = None, user_id: str = None):
         handle_parsing_errors=True,
         max_iterations=3,
         early_stopping_method="generate",
-        memory=memory
+        memory=memory,
+        agent_kwargs={
+            "system_message": """You are a product recommendation assistant. 
+            
+            IMPORTANT: When providing product information, always use consistent markdown formatting:
+            
+            **Product:** [product_name]  
+            **Aisle:** [aisle]  
+            **Department:** [department]
+            
+            For recommendations, include the reason:
+            **Product:** [product_name]  
+            **Aisle:** [aisle]  
+            **Department:** [department]  
+            **Score:** [score/explanation]
+            
+            Always provide clear, formatted responses with product details using bold markdown headers."""
+        }
     )
     
     return agent
@@ -613,7 +640,7 @@ async def hybrid_agent_chat(request: Request):
             })
         
         # Handle recommendation requests without user ID directly
-        if any(word in query_lower for word in ["recommend", "suggest", "buy", "should", "products"]) and not user_id:
+        if any(word in query_lower for word in ["recommend", "suggest", "buy", "should"]) and not user_id:
             response = "I'd be happy to provide personalized recommendations! Please enter your user ID in the field above and try again. For example, enter '123' in the User ID field, then ask 'What should I buy?'"
             
             return JSONResponse({
@@ -622,6 +649,7 @@ async def hybrid_agent_chat(request: Request):
                 "session_id": session_id
             })
         
+        # For general product queries (like "suggest some products"), let the agent handle it
         # Create hybrid agent with session memory and user ID context
         agent = create_hybrid_agent(session_id, user_id)
         
@@ -645,12 +673,14 @@ async def hybrid_agent_chat(request: Request):
                 fallback_response = f"Hello! I'm your product assistant. I can help you with product information and personalized recommendations. Your user ID is {user_id}, so I can provide personalized recommendations for you. Ask me 'What should I buy?' for personalized recommendations or ask about specific products and categories."
             else:
                 fallback_response = "Hello! I'm your product assistant. I can help you with product information and personalized recommendations. Please enter your user ID above for personalized recommendations, or ask me about specific products and categories."
-        elif any(word in query_lower for word in ["recommend", "suggest", "buy", "should", "products"]):
+        elif any(word in query_lower for word in ["recommend", "suggest", "buy", "should"]):
             if not user_id:
                 # User is asking for recommendations without user ID
                 fallback_response = "I'd be happy to provide personalized recommendations! Please enter your user ID in the field above and try again. For example, enter '123' in the User ID field, then ask 'What should I buy?'"
             else:
                 fallback_response = "I'm here to help with product recommendations and information! You can ask me about specific products, categories, or request personalized recommendations. For example, try asking 'Tell me about organic fruits' or 'What should I buy?'"
+        elif any(word in query_lower for word in ["product", "products", "find", "search"]):
+            fallback_response = "I can help you find products! Try asking about specific categories like 'Tell me about soft drinks' or 'What fruits do you have?'"
         else:
             if user_id:
                 fallback_response = f"I'm here to help you with product information and recommendations! Your user ID is {user_id}, so I can provide personalized recommendations. Ask me 'What should I buy?' for personalized recommendations or ask about specific products and categories."

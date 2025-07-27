@@ -22,7 +22,7 @@ h1 {
   overflow-y: scroll;
   background-color: white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px;
+  margin-bottom: 8px; /* Reduced from 15px */
 }
 .message {
   margin-bottom: 15px;
@@ -74,19 +74,33 @@ button:hover {
   border-radius: 8px;
   padding: 15px;
   background-color: #f9f9f9;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.product-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
 }
 
 .product-name {
   font-weight: bold;
   margin-bottom: 8px;
   color: #333;
+  font-size: 16px;
 }
 
 .product-info {
   display: flex;
-  gap: 15px;
+  flex-direction: column;
+  gap: 5px;
   font-size: 14px;
   color: #666;
+}
+
+.product-info span {
+  display: inline-block;
+  margin-right: 15px;
 }
 
 .department {
@@ -97,10 +111,15 @@ button:hover {
   color: #28a745;
 }
 
+.reason {
+  color: #e74c3c;
+  font-weight: 500;
+}
+
 /* Markdown styling */
 .message.bot strong {
   font-weight: bold;
-  color: #2c3e50;
+  color: #007bff;
 }
 
 .message.bot em {
@@ -145,12 +164,30 @@ button:hover {
   font-style: italic;
 }
 
+/* Enhanced styling for product information with consistent formatting */
+.message.bot p:has(strong) {
+  background-color: #f8f9fa;
+  padding: 10px;
+  border-radius: 6px;
+  margin: 8px 0;
+  border-left: 3px solid #007bff;
+}
+
+/* Simple styling for lists (which often contain product info) */
+.message.bot ul li {
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin: 4px 0;
+  border-left: 3px solid #007bff;
+}
+
 /* User info section */
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   padding: 15px;
   background-color: #f8f9fa;
   border-radius: 8px;
@@ -187,7 +224,7 @@ button:hover {
 .input-container {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   align-items: center;
 }
 

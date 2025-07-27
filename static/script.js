@@ -59,8 +59,8 @@ async function sendMessage() {
       console.log("Session started with ID:", sessionId);
     }
 
-    // Process response, try to extract product information and display as cards
-    processResponse(data.answer);
+    // Process response with markdown
+    appendMessage("bot", data.answer);
   } catch (error) {
     appendMessage("bot", "Sorry, an error occurred: " + error.message);
   }
@@ -127,100 +127,6 @@ function appendMessage(sender, text) {
   }
   msgDiv.appendChild(contentSpan);
 
-  chatBox.appendChild(msgDiv);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function processResponse(answer) {
-  // First check if it contains product information
-  const productRegex =
-    /Product Name[:：]([^；]+)；Aisle[:：]([^；]+)；Department[:：]([^；]+)/g;
-  let match;
-  let products = [];
-
-  // Extract all product information
-  while ((match = productRegex.exec(answer)) !== null) {
-    products.push({
-      name: match[1].trim(),
-      aisle: match[2].trim(),
-      department: match[3].trim(),
-    });
-  }
-
-  // If product information is found, display as cards
-  if (products.length > 0) {
-    displayProductCards(products, answer);
-  } else {
-    // If no product information, display text response directly
-    appendMessage("bot", answer);
-  }
-}
-
-function displayProductCards(products, originalAnswer) {
-  const chatBox = document.getElementById("chat-box");
-  const msgDiv = document.createElement("div");
-  msgDiv.className = "message bot";
-
-  // Create sender label
-  const senderSpan = document.createElement("span");
-  senderSpan.innerText = "System: ";
-  senderSpan.style.fontWeight = "bold";
-  msgDiv.appendChild(senderSpan);
-
-  // Extract non-product information part from system response
-  let introText = originalAnswer;
-  products.forEach((product) => {
-    introText = introText.replace(
-      `Product Name：${product.name}；Aisle：${product.aisle}；Department：${product.department}`,
-      ""
-    );
-  });
-
-  // Clean text, remove extra spaces and punctuation
-  introText = introText
-    .replace(/；+/g, "；")
-    .replace(/；\s*；/g, "；")
-    .replace(/；\s*$/g, "")
-    .trim();
-
-  if (introText) {
-    const textDiv = document.createElement("div");
-    textDiv.innerHTML = marked.parse(introText);
-    msgDiv.appendChild(textDiv);
-  }
-
-  // Create product cards container
-  const cardsContainer = document.createElement("div");
-  cardsContainer.className = "product-cards";
-
-  // Add product cards
-  products.forEach((product) => {
-    const card = document.createElement("div");
-    card.className = "product-card";
-
-    const nameDiv = document.createElement("div");
-    nameDiv.className = "product-name";
-    nameDiv.innerText = product.name;
-    card.appendChild(nameDiv);
-
-    const infoDiv = document.createElement("div");
-    infoDiv.className = "product-info";
-
-    const deptSpan = document.createElement("span");
-    deptSpan.className = "department";
-    deptSpan.innerText = `Department: ${product.department}`;
-    infoDiv.appendChild(deptSpan);
-
-    const aisleSpan = document.createElement("span");
-    aisleSpan.className = "aisle";
-    aisleSpan.innerText = `Aisle: ${product.aisle}`;
-    infoDiv.appendChild(aisleSpan);
-
-    card.appendChild(infoDiv);
-    cardsContainer.appendChild(card);
-  });
-
-  msgDiv.appendChild(cardsContainer);
   chatBox.appendChild(msgDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
 }

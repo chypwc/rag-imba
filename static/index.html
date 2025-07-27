@@ -8,6 +8,7 @@
   </head>
   <body>
     <h1>Product Q&A Chat Interface</h1>
+    <div id="chat-box"></div>
     <div class="user-info">
       <label for="user-id">User ID:</label>
       <input
@@ -20,12 +21,13 @@
         >Enter your user ID for personalized recommendations</span
       >
     </div>
+
     <div class="input-container">
       <input type="text" id="query" placeholder="Enter your question..." />
       <button onclick="sendMessage()">Send</button>
       <button onclick="clearHistory()" class="clear-btn">Clear History</button>
     </div>
-    <div id="chat-box"></div>
+
     <script src="/static/script.js"></script>
   </body>
 </html>

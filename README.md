@@ -3,6 +3,7 @@
 A sophisticated product recommendation system that combines collaborative filtering (ALS - Alternating Least Squares) with RAG (Retrieval-Augmented Generation) capabilities. This system provides intelligent product recommendations through a conversational interface.
 
 ![](./images/image.png)
+![](./images/image2.png)
 
 ## 🚀 Features
 
