@@ -368,7 +368,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             for i, doc in enumerate(docs, 1):
                 metadata = doc.metadata
                 # Format exactly as requested
-                result += f"{i}. **Product:** {metadata.get('product_name', 'Unknown Product')}; **Aisle:** {metadata.get('aisle', 'Unknown')}; **Department:** {metadata.get('department', 'Unknown')}\n\n"
+                result += f"{i}. Product: **{metadata.get('product_name', 'Unknown Product')}**; Aisle: **{metadata.get('aisle', 'Unknown')}**; Department: **{metadata.get('department', 'Unknown')}**\n\n"
             
             return result
         except Exception as e:
@@ -386,7 +386,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             if docs:
                 metadata = docs[0].metadata
                 # Format exactly as requested
-                result = f"**Product:** {metadata.get('product_name', 'Unknown Product')}; **Aisle:** {metadata.get('aisle', 'Unknown')}; **Department:** {metadata.get('department', 'Unknown')}"
+                result = f"Product: **{metadata.get('product_name', 'Unknown Product')}**; Aisle: **{metadata.get('aisle', 'Unknown')}**; Department: **{metadata.get('department', 'Unknown')}**"
                 return result
             else:
                 return f"Product ID {product_id_int} not found in database."
@@ -401,7 +401,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
         name="get_product_recommendations",
         description=f"""Get personalized product recommendations for user {user_id if user_id else '[USER_ID]'}. 
         
-        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]; **Score:** [score]
+        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**; Score: **[score]**
         
         Use this when users ask for recommendations, suggestions, or what they should buy. 
         Pass the user ID '{user_id}' as the first parameter and the number of recommendations as the second parameter (e.g., '10' for 10 products).""",
@@ -412,7 +412,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
         name="search_product_database",
         description="""Search the product database for information about products, categories, departments, or general product queries. 
         
-        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]
+        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**
         
         Use this when users ask about specific products, categories, or general product information.""",
         func=enhanced_search_tool
@@ -422,7 +422,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
         name="get_product_details",
         description="""Get detailed information about a specific product by its ID. 
         
-        Format output as: **Product:** [name]; **Aisle:** [aisle]; **Department:** [department]
+        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**
         
         Use this to get product names, departments, and aisles for specific product IDs.""",
         func=get_product_details
