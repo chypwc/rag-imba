@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+pandas
+langchain
+openai
+qdrant-client
+langchain-community
+langchain-openai
+tiktoken
+langchain-qdrant
+awscli
+pypdf
+streamlit
+faiss-cpu
+scipy
+implicit

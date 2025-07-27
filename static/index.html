@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Product Q&A Chat Interface</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  </head>
+  <body>
+    <h1>Product Q&A Chat Interface</h1>
+    <div class="user-info">
+      <label for="user-id">User ID:</label>
+      <input
+        type="number"
+        id="user-id"
+        placeholder="Enter your user ID (e.g., 123)"
+        min="1"
+      />
+      <span class="user-id-hint"
+        >Enter your user ID for personalized recommendations</span
+      >
+    </div>
+    <div class="input-container">
+      <input type="text" id="query" placeholder="Enter your question..." />
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="clearHistory()" class="clear-btn">Clear History</button>
+    </div>
+    <div id="chat-box"></div>
+    <script src="/static/script.js"></script>
+  </body>
+</html>
