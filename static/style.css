@@ -119,12 +119,12 @@ button:hover {
 /* Markdown styling */
 .message.bot strong {
   font-weight: bold;
-  color: #007bff;
+  color: #5e5b5b;
 }
 
 .message.bot em {
   font-style: italic;
-  color: #7f8c8d;
+  color: #007bff;
 }
 
 .message.bot ul, .message.bot ol {

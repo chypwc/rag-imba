@@ -292,6 +292,22 @@ def recommend_for_user(user_id, N=10):
 
     return [(product_id_map[pid], float(score)) for pid, score in zip(item_indices, scores)]
 
+def get_similar_users(user_id, N=5):
+    """Return the top-N most similar users to the given user_id."""
+    # Ensure user_id is an int for lookup
+    if isinstance(user_id, str):
+        user_id = user_id.strip().strip("'\"")
+        user_id = int(user_id)
+    user_idx = reverse_user_id_map[user_id]
+    user_vec = model.user_factors[user_idx]
+    all_vecs = model.user_factors
+
+    # Compute cosine similarity
+    similarities = all_vecs @ user_vec / (np.linalg.norm(all_vecs, axis=1) * np.linalg.norm(user_vec) + 1e-10)
+    similarities[user_idx] = -np.inf
+    top_indices = np.argsort(similarities)[-N:][::-1]
+    similar_users = [user_id_map[idx] for idx in top_indices]
+    return similar_users
 
 def create_enhanced_tools(vectorstore, user_id=None):
     """Create enhanced tools with better integration"""
@@ -338,7 +354,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             for i, (product_id, score) in enumerate(unique_recs, 1):
                 # Get product details
                 product_details = get_product_details(str(product_id))
-                result += f"{i}. {product_details}; **Score:** {score:.3f}\n\n"
+                result += f"{i}. {product_details}; **Score**: *{score:.3f}*\n\n"
             
             return result
         except ValueError:
@@ -380,7 +396,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             for i, doc in enumerate(docs, 1):
                 metadata = doc.metadata
                 # Format exactly as requested
-                result += f"{i}. Product: **{metadata.get('product_name', 'Unknown Product')}**; Aisle: **{metadata.get('aisle', 'Unknown')}**; Department: **{metadata.get('department', 'Unknown')}**\n\n"
+                result += f"{i}. **Product**: *{metadata.get('product_name', 'Unknown Product')}*; **Aisle**: *{metadata.get('aisle', 'Unknown')}*; **Department**: *{metadata.get('department', 'Unknown')}*\n\n"
             
             return result
         except Exception as e:
@@ -398,7 +414,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
             if docs:
                 metadata = docs[0].metadata
                 # Format exactly as requested
-                result = f"Product: **{metadata.get('product_name', 'Unknown Product')}**; Aisle: **{metadata.get('aisle', 'Unknown')}**; Department: **{metadata.get('department', 'Unknown')}**"
+                result = f"**Product**: *{metadata.get('product_name', 'Unknown Product')}*; **Aisle**: *{metadata.get('aisle', 'Unknown')}*; **Department**: *{metadata.get('department', 'Unknown')}*"
                 return result
             else:
                 return f"Product ID {product_id_int} not found in database."
@@ -407,13 +423,31 @@ def create_enhanced_tools(vectorstore, user_id=None):
             return f"Error: Product ID '{product_id}' is not a valid integer."
         except Exception as e:
             return f"Error getting product details: {str(e)}"
-    
+
+    def get_similar_users_tool(user_id: str, count: str = "5") -> str:
+        """Get similar users to the given user_id, formatted for markdown output."""
+        try:
+            top_n = int(count)
+            similar_users = get_similar_users(user_id, top_n)
+            if not similar_users:
+                return f"No similar users found for user {user_id}."
+            result = f"**Top {top_n} users similar to user {user_id}:**\n\n"
+            for i, sim_user in enumerate(similar_users, 1):
+                result += f"{i}. **User ID**: *{sim_user}*\n"
+            return result
+        except ValueError:
+            return f"Error: Invalid count '{count}'. Please provide a valid number."
+        except KeyError:
+            return f"Error: User ID '{user_id}' not found in the system."
+        except Exception as e:
+            return f"Error getting similar users: {str(e)}"
+
     # Create tools
     recommendation_tool = Tool(
         name="get_product_recommendations",
         description=f"""Get personalized unique product recommendations for user {user_id if user_id else '[USER_ID]'}. 
         
-        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**; Score: **[score]**
+        Format output as: **Product**: *[name]*; **Aisle**: *[aisle]*; **Department**: *[department]*; **Score**: *[score]*
         
         IMPORTANT: Ensure recommendations are unique and diverse, avoiding duplicate product names.
         Use this when users ask for recommendations, suggestions, or what they should buy. 
@@ -425,7 +459,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
         name="search_product_database",
         description="""Search the product database for information about products, categories, departments, or general product queries. 
         
-        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**
+        Format output as: **Product**: *[name]*; **Aisle**: *[aisle]*; **Department**: *[department]*
         
         IMPORTANT: Provide diverse and unique product results when possible.
         Use this when users ask about specific products, categories, or general product information.""",
@@ -436,13 +470,19 @@ def create_enhanced_tools(vectorstore, user_id=None):
         name="get_product_details",
         description="""Get detailed information about a specific product by its ID. 
         
-        Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**
+        Format output as: **Product**: *[name]*; **Aisle**: *[aisle]*; **Department**: *[department]*
         
         Use this to get product names, departments, and aisles for specific product IDs.""",
         func=get_product_details
     )
     
-    return [recommendation_tool, search_tool, product_details_tool]
+    similar_users_tool = Tool(
+        name="get_similar_users",
+        description="Get similar users to the given user_id",
+        func=get_similar_users_tool
+    )
+
+    return [recommendation_tool, search_tool, product_details_tool, similar_users_tool]
 
 
 @app.on_event("startup")
@@ -570,15 +610,15 @@ def create_hybrid_agent(session_id: str = None, user_id: str = None):
             
             IMPORTANT: When providing product information, always use consistent markdown formatting:
             
-            **Product:** [product_name]  
-            **Aisle:** [aisle]  
-            **Department:** [department]
+            **Product**: *[product_name]*  
+            **Aisle**: *[aisle]*  
+            **Department**: *[department]*
             
             For recommendations, include the reason and ensure diversity:
-            **Product:** [product_name]  
-            **Aisle:** [aisle]  
-            **Department:** [department]  
-            **Score:** [score/explanation]
+            **Product**: *[product_name]*  
+            **Aisle**: *[aisle]*  
+            **Department**: *[department]*  
+            **Score**: *[score/explanation]*
             
             Always provide clear, formatted responses with unique and diverse product details using bold markdown headers."""
         }
