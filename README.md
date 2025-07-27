@@ -136,11 +136,56 @@ Where `SET` is one of the following evaluation sets:
 ### Web Interface
 
 1. Open your browser and navigate to `http://localhost:8000`
-2. Start a conversation with the chatbot
-3. Ask questions like:
-   - "What products would you recommend for me?"
-   - "Find products similar to [product name]"
-   - "What are the best products in [category]?"
+2. Enter your User ID in the field provided (for personalized features)
+3. Start a conversation with the chatbot
+
+###  Query Capabilities
+
+The system supports three main types of queries:
+
+#### 1. **Product Information Queries**
+Ask about specific products, categories, or general product information:
+
+**Examples:**
+- "What frozen meals do you have?"
+- "Tell me about organic fruits"
+- "What soft drinks are available?"
+- "Show me products in the bakery department"
+- "What products are in the dairy aisle?"
+
+**Features:**
+- Semantic search across product database
+- Detailed product information with aisle and department
+- Formatted markdown output with consistent styling
+
+#### 2. **Personalized Recommendations**
+Get product recommendations based on your user ID and purchase history:
+
+**Examples:**
+- "What should I buy?"
+- "Give me product recommendations"
+- "Suggest some products for me"
+- "What would you recommend?"
+
+**Features:**
+- Collaborative filtering using ALS (Alternating Least Squares)
+- Unique product recommendations (no duplicates)
+- Recommendation scores with explanations
+- Diverse product categories
+
+#### 3. **Similar Users Discovery**
+Find users with similar purchase patterns to yours:
+
+**Examples:**
+- "Who are similar users?"
+- "Find users like me"
+- "Show me similar customers"
+
+**Features:**
+- User similarity based on ALS embeddings
+- Cosine similarity calculations
+- Top-N most similar users
+- Useful for understanding customer segments
 
 ### API Endpoints
 
@@ -153,11 +198,29 @@ Where `SET` is one of the following evaluation sets:
 ### Example API Usage
 
 ```bash
-# Chat with the system
+# Product information query
 curl -X POST "http://localhost:8000/chat" \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "What products would you recommend for me?",
+    "query": "What frozen meals do you have?",
+    "session_id": "user123"
+  }'
+
+# Personalized recommendations
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What should I buy?",
+    "user_id": "6677",
+    "session_id": "user123"
+  }'
+
+# Similar users query
+curl -X POST "http://localhost:8000/chat" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Who are similar users?",
+    "user_id": "6677",
     "session_id": "user123"
   }'
 
@@ -166,6 +229,13 @@ curl -X POST "http://localhost:8000/clear_history" \
   -H "Content-Type: application/json" \
   -d '{"session_id": "user123"}'
 ```
+
+### 💡 Tips for Best Results
+
+1. **For Product Queries**: Be specific about categories, departments, or product types
+2. **For Recommendations**: Always provide a valid User ID for personalized results
+3. **For Similar Users**: Use the same User ID as for recommendations
+4. **Session Management**: The system maintains conversation context across interactions
 
 ## 🔧 Configuration
 
