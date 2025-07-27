@@ -307,22 +307,34 @@ def create_enhanced_tools(vectorstore, user_id=None):
             user_id_int = int(user_id)
             
             # Get more recommendations than requested to ensure we have enough unique products
-            recs = recommend_for_user(user_id_int, N=top_n * 2)
+            recs = recommend_for_user(user_id_int, N=top_n * 3)
             
-            # Remove duplicates and get unique products
+            # Remove duplicates by product name and get unique products
             seen_products = set()
+            seen_names = set()
             unique_recs = []
             
             for product_id, score in recs:
                 if product_id not in seen_products and len(unique_recs) < top_n:
-                    seen_products.add(product_id)
-                    unique_recs.append((product_id, score))
+                    # Get product details to check name
+                    product_details = get_product_details(str(product_id))
+                    # Extract product name from the details
+                    if "Product: **" in product_details:
+                        product_name = product_details.split("Product: **")[1].split("**")[0]
+                    else:
+                        product_name = f"Product_{product_id}"
+                    
+                    # Check if we already have a product with similar name
+                    if product_name not in seen_names:
+                        seen_products.add(product_id)
+                        seen_names.add(product_name)
+                        unique_recs.append((product_id, score))
             
             if not unique_recs:
                 return f"No unique product recommendations found for user {user_id_int}."
             
             # Get product details for each recommendation
-            result = f"Here are the top {len(unique_recs)} product recommendations for user {user_id_int}:\n\n"
+            result = f"Here are the top {len(unique_recs)} unique product recommendations for user {user_id_int}:\n\n"
             for i, (product_id, score) in enumerate(unique_recs, 1):
                 # Get product details
                 product_details = get_product_details(str(product_id))
@@ -399,10 +411,11 @@ def create_enhanced_tools(vectorstore, user_id=None):
     # Create tools
     recommendation_tool = Tool(
         name="get_product_recommendations",
-        description=f"""Get personalized product recommendations for user {user_id if user_id else '[USER_ID]'}. 
+        description=f"""Get personalized unique product recommendations for user {user_id if user_id else '[USER_ID]'}. 
         
         Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**; Score: **[score]**
         
+        IMPORTANT: Ensure recommendations are unique and diverse, avoiding duplicate product names.
         Use this when users ask for recommendations, suggestions, or what they should buy. 
         Pass the user ID '{user_id}' as the first parameter and the number of recommendations as the second parameter (e.g., '10' for 10 products).""",
         func=get_recommendations_with_count
@@ -414,6 +427,7 @@ def create_enhanced_tools(vectorstore, user_id=None):
         
         Format output as: Product: **[name]**; Aisle: **[aisle]**; Department: **[department]**
         
+        IMPORTANT: Provide diverse and unique product results when possible.
         Use this when users ask about specific products, categories, or general product information.""",
         func=enhanced_search_tool
     )
@@ -560,13 +574,13 @@ def create_hybrid_agent(session_id: str = None, user_id: str = None):
             **Aisle:** [aisle]  
             **Department:** [department]
             
-            For recommendations, include the reason:
+            For recommendations, include the reason and ensure diversity:
             **Product:** [product_name]  
             **Aisle:** [aisle]  
             **Department:** [department]  
             **Score:** [score/explanation]
             
-            Always provide clear, formatted responses with product details using bold markdown headers."""
+            Always provide clear, formatted responses with unique and diverse product details using bold markdown headers."""
         }
     )
     
