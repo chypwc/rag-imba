@@ -427,6 +427,14 @@ def create_enhanced_tools(vectorstore, user_id=None):
     def get_similar_users_tool(user_id: str, count: str = "5") -> str:
         """Get similar users to the given user_id, formatted for markdown output."""
         try:
+            # Handle comma-separated input (e.g., "6677, 7")
+            if "," in user_id:
+                parts = user_id.split(",")
+                if len(parts) >= 2:
+                    user_id = parts[0].strip()
+                    count = parts[1].strip()
+            
+            # Parse the count parameter
             top_n = int(count)
             similar_users = get_similar_users(user_id, top_n)
             if not similar_users:
@@ -477,9 +485,12 @@ def create_enhanced_tools(vectorstore, user_id=None):
     )
     
     similar_users_tool = Tool(
-        name="get_similar_users",
-        description="Get similar users to the given user_id",
-        func=get_similar_users_tool
+    name="get_similar_users",
+    description=f"""Get similar users to the given user_id. 
+    
+    Pass the user ID '{user_id if user_id else '[USER_ID]'}' as the first parameter and the number of similar users as the second parameter (e.g., '7' for 7 users).
+    Use this when users ask for similar users, customers, or user recommendations.""",
+    func=get_similar_users_tool
     )
 
     return [recommendation_tool, search_tool, product_details_tool, similar_users_tool]
