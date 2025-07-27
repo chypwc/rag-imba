@@ -382,16 +382,30 @@ def create_enhanced_tools(vectorstore, user_id=None):
         except Exception as e:
             return f"Error getting recommendations: {str(e)}"
 
-    def enhanced_search_tool(query: str, top_k: int = 5) -> str:
+    def enhanced_search_tool(query: str, top_k: str = "5") -> str:
         """Enhanced product search with better formatting"""
         try:
+            # Handle comma-separated input (e.g., "frozen meals, 10")
+            if "," in query:
+                parts = query.split(",")
+                if len(parts) >= 2:
+                    search_query = parts[0].strip()
+                    count = parts[1].strip()
+                    top_k = int(count)
+                else:
+                    search_query = query
+                    top_k = int(top_k)
+            else:
+                search_query = query
+                top_k = int(top_k)
+
             # Use the global vectorstore instead of loading FAISS
-            docs = vectorstore.similarity_search(query, k=top_k)
+            docs = vectorstore.similarity_search(search_query, k=top_k)
             
             if not docs:
-                return f"No products found matching: {query}"
+                return f"No products found matching: {search_query}"
             
-            result = f"Found {len(docs)} products related to '{query}':\n\n"
+            result = f"Found {len(docs)} products related to '{search_query}':\n\n"
             
             for i, doc in enumerate(docs, 1):
                 metadata = doc.metadata
@@ -399,6 +413,8 @@ def create_enhanced_tools(vectorstore, user_id=None):
                 result += f"{i}. **Product**: *{metadata.get('product_name', 'Unknown Product')}*; **Aisle**: *{metadata.get('aisle', 'Unknown')}*; **Department**: *{metadata.get('department', 'Unknown')}*\n\n"
             
             return result
+        except ValueError:
+            return f"Error: Invalid count '{top_k}'. Please provide a valid number."
         except Exception as e:
             return f"Error searching products: {str(e)}"
     
@@ -470,7 +486,8 @@ def create_enhanced_tools(vectorstore, user_id=None):
         Format output as: **Product**: *[name]*; **Aisle**: *[aisle]*; **Department**: *[department]*
         
         IMPORTANT: Provide diverse and unique product results when possible.
-        Use this when users ask about specific products, categories, or general product information.""",
+        Use this when users ask about specific products, categories, or general product information.
+        Pass the search query as the first parameter and the number of results as the second parameter (e.g., 'frozen meals, 10' for 10 frozen meal products).""",
         func=enhanced_search_tool
     )
     
