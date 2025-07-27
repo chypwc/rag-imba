@@ -80,8 +80,11 @@ The system consists of several key components:
    ```
 
 ## 📊 Data Requirements
+The system expects the following data files in the `data/` directory. You can download the dataset from Kaggle:
 
-The system expects the following data files in the `data/` directory:
+Dataset Source: [Simplified Instacart Data](https://www.kaggle.com/datasets/brendanartley/simplifiedinstacartdata)
+
+Download the dataset and extract the required CSV files to the `data/` directory.
 
 ### Dataset Schema
 
